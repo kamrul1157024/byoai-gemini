@@ -154,9 +154,14 @@ func generateTextUsingGemini(c *gin.Context) {
 	})
 }
 
+func getStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 func main() {
 	router := gin.Default()
 	router.POST("/generative/text", generateTextUsingGemini)
+	router.GET("/_status", getStatus)
 
 	router.Run("localhost:8000")
 }
