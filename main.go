@@ -158,5 +158,5 @@ func main() {
 	router := gin.Default()
 	router.POST("/generative/text", generateTextUsingGemini)
 
-	router.Run("localhost:80")
+	router.Run("localhost:8000")
 }
