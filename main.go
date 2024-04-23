@@ -118,7 +118,7 @@ func generateTextUsingGemini(c *gin.Context) {
 	reqJson, _ := json.Marshal(reqBody)
 	resp, err := http.Post(fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?alt=sse&key=%s", "AIzaSyAb09y9YVf_sr1oMNz7CiJ3lueQwFRXNXI"), "application/json", bytes.NewBuffer([]byte(reqJson)))
 	if err != nil {
-		panic("Failed While Calling API")
+		panic(err)
 	}
 
 	defer resp.Body.Close()
