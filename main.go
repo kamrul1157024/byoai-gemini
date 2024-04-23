@@ -111,7 +111,7 @@ func getTextFromGeminiResponse(geminiStreamResponse GeminiStreamResponse) string
 func generateTextUsingGemini(c *gin.Context) {
 	textGenerationRequestBody := TextGenerationRequestBody{}
 	err := c.BindJSON(&textGenerationRequestBody)
-	if err == nil {
+	if err != nil {
 		fmt.Println(err)
 	}
 	reqBody := getGeminiRequest(textGenerationRequestBody)
@@ -125,10 +125,15 @@ func generateTextUsingGemini(c *gin.Context) {
 
 	reader := bufio.NewReader(resp.Body)
 
+	c.Status(http.StatusOK)
 	c.Header("Content-Type", "text/event-stream; charset=utf-8")
 	c.Header("Transfer-Encoding", "chunked")
 
-	c.Stream(func(w io.Writer) bool {
+	c.Writer.WriteHeaderNow()
+
+	chunkChannel := make(chan string)
+	go func() {
+		defer close(chunkChannel)
 		for {
 			lineBytes, err := reader.ReadBytes('\n')
 			if err == io.EOF {
@@ -143,14 +148,20 @@ func generateTextUsingGemini(c *gin.Context) {
 			err = json.Unmarshal([]byte(jsonStr), &geminiStreamResponse)
 
 			bufferText := getTextFromGeminiResponse(geminiStreamResponse)
-			w.Write([]byte(bufferText))
+			chunkChannel <- bufferText
 			if err != nil {
 				print(err)
-				return true
 			}
 		}
+	}()
 
-		return false
+	c.Stream(func(w io.Writer) bool {
+		output, ok := <-chunkChannel
+		if !ok {
+			return false
+		}
+		c.Writer.Write([]byte(output))
+		return true
 	})
 }
 
