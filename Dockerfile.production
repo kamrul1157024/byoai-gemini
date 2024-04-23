@@ -11,3 +11,4 @@ RUN go build
 FROM scratch
 COPY --from=builder /app/main /main
 ENTRYPOINT ["/main"]
+EXPOSE 8000
