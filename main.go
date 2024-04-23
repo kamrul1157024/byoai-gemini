@@ -163,5 +163,6 @@ func main() {
 	router.POST("/generative/text", generateTextUsingGemini)
 	router.GET("/_status", getStatus)
 
-	router.Run("localhost:8000")
+	router.SetTrustedProxies(nil)
+	router.Run("0.0.0.0:8000")
 }
