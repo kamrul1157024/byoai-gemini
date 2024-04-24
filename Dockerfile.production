@@ -12,5 +12,5 @@ FROM scratch
 COPY --from=builder /app/main /main
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENV GIN_MODE=release
-ENTRYPOINT ["/server"]
+ENTRYPOINT ["/main"]
 EXPOSE 8000
