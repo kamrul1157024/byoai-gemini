@@ -255,6 +255,7 @@ func callApi[V any](payload *V) <-chan string {
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?alt=sse&key=%s",
 		config.AppConfig.GEMINI_API_KEY,
 	)
+  println(url)
 	reqJson, err := json.Marshal(payload)
 	fmt.Println(string(reqJson))
 	apperror.CheckAndLog(err, nil)

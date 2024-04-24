@@ -1,8 +1,6 @@
 package config
 
 import (
-	"encoding/json"
-	"github.com/kamrul1157024/byoai-gemini/internal/apperror"
 	"os"
 )
 
@@ -11,12 +9,4 @@ type Config struct {
 }
 
 
-var AppConfig = Config{}
-
-func LoadCofiguration() {
-  configFileData, err := os.ReadFile("config.json")
-  apperror.CheckAndPanic(err)
-
-  err = json.Unmarshal(configFileData, &AppConfig)
-  apperror.CheckAndPanic(err)
-}
+var AppConfig = Config{ GEMINI_API_KEY: os.Getenv("GEMINI_AI_API_KEY")}
