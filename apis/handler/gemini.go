@@ -28,19 +28,27 @@ func StreamResponse(c *gin.Context, ch <-chan string) {
 	})
 }
 
-func generateTextUsingGemini(c *gin.Context) {
-	textGenerationRequestBody := services.TextGenerationParams{}
-	err := c.BindJSON(&textGenerationRequestBody)
+func ParseBody[B any](c *gin.Context, body *B) *B {
+	err := c.BindJSON(&body)
 	apperror.CheckAndLog(err, nil)
-	ch := services.GetResponseChanForGenerativeAI(&textGenerationRequestBody)
+	return body
+}
+
+func generateTextUsingGemini(c *gin.Context) {
+	textGenerationRequestBody := ParseBody(c, &services.TextGenerationParams{})
+	ch := services.GetResponseChanForGenerativeAI(textGenerationRequestBody)
 	StreamResponse(c, ch)
 }
 
 func generateContextFulChatUsingGemini(c *gin.Context) {
-	chatRequestBody := services.ChatParams{}
-	err := c.BindJSON(&chatRequestBody)
-	apperror.CheckAndLog(err, nil)
-  ch := services.GetResponseChanForChat(&chatRequestBody)
+	chatRequestBody := ParseBody(c, &services.ChatParams{})
+	ch := services.GetResponseChanForChat(chatRequestBody)
+	StreamResponse(c, ch)
+}
+
+func correctTextUsingGemini(c *gin.Context) {
+  correctiveAIRequestBody := ParseBody(c, &services.TextCorrectionParams{})
+  ch := services.GetResponseChanForCorrectiveAI(correctiveAIRequestBody)
   StreamResponse(c, ch)
 }
 
@@ -50,5 +58,6 @@ func getStatus(c *gin.Context) {
 
 func AddRoutesForGeminiAI(engine *gin.Engine) {
 	engine.POST("/generative/text", StreamingHeader, generateTextUsingGemini)
+	engine.POST("/corrective/text", StreamingHeader, correctTextUsingGemini)
 	engine.POST("/chat", StreamingHeader, generateContextFulChatUsingGemini)
 }

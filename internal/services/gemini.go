@@ -23,6 +23,15 @@ var INITIAL_PROMPTS_FOR_TEXT_GENERATION = map[string]string{
 	"post":        "Write a post on the topic : ${topic}",
 }
 
+var PROMPTS_FOR_CONTENT_EDIT = map[string]string{
+	"shorten":                           "Rewrite the following content but keep it short, simple",
+	"elaborate":                         "Rewrite the following content to make it descriptive and easy to understand",
+	"refine":                            "Rephrase but keeping the meaning intact of the following",
+	"fixSpellingAndGrammaticalMistakes": "Fix spelling and grammatical mistakes of the following content",
+	"informalTone":                      "Rephrase the following content in informal tone",
+	"formalTone":                        "Rephrase the following content in formal and official tone",
+}
+
 type TextGenerationParams struct {
 	WordLimit   int32   `json:"wordLimit"`
 	Prompt      string  `json:"prompt"`
@@ -31,6 +40,11 @@ type TextGenerationParams struct {
 	GenerateFor *string `json:"generateFor"`
 	UseCase     string  `json:"useCase"`
 	Description *string `json:"description,omitEmpty"`
+}
+
+type TextCorrectionParams struct {
+	Input          string `json:"input"`
+	FineTuneOption string `json:"fineTuneOption"`
 }
 
 type ConversationItem struct {
@@ -153,6 +167,23 @@ func getFormattedPromptForGenerativeAI(textGenerationRequestBody *TextGeneration
 	return finalPrompt
 }
 
+func getFormattedPromptForCorrectiveAI(correctiveAIRequestBody *TextCorrectionParams) string {
+	fmt.Println(correctiveAIRequestBody)
+	prompt := fmt.Sprintf(`
+  You are helpful writting assistant,
+  if you can not find proper response just send back the content.
+  Do not add addtional information text with the response, only send the text that sent for correction
+  %s
+  '''
+  %s
+  '''`,
+		PROMPTS_FOR_CONTENT_EDIT[correctiveAIRequestBody.FineTuneOption],
+		correctiveAIRequestBody.Input,
+	)
+	fmt.Println(prompt)
+	return prompt
+}
+
 func getGeminiPayloadForTextGeneration(textGenerationRequestBody *TextGenerationParams) *GeminiRequestBody {
 	prompt := getFormattedPromptForGenerativeAI(textGenerationRequestBody)
 	return &GeminiRequestBody{
@@ -195,9 +226,29 @@ func getGeminiPayloadForChat(chatParams *ChatParams) *GeminiChatRequestBody {
 	}
 }
 
+func getGeminiPayloadForTextCorrection(textCorrectionParams *TextCorrectionParams) *GeminiChatRequestBody {
+	prompt := getFormattedPromptForCorrectiveAI(textCorrectionParams)
+	return &GeminiChatRequestBody{
+		Contents: []ChatContent{
+			{
+				Role: "user",
+				Parts: []Part{
+					{
+						Text: prompt,
+					},
+				},
+			},
+		},
+	}
+}
+
 func callApi[V any](payload *V) <-chan string {
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?alt=sse&key=%s", config.AppConfig.GEMINI_API_KEY)
+	url := fmt.Sprintf(
+		"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?alt=sse&key=%s",
+		config.AppConfig.GEMINI_API_KEY,
+	)
 	reqJson, err := json.Marshal(payload)
+	fmt.Println(string(reqJson))
 	apperror.CheckAndLog(err, nil)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(reqJson)))
 	apperror.CheckAndLog(err, nil)
@@ -214,5 +265,10 @@ func GetResponseChanForGenerativeAI(textGenerationRequestBody *TextGenerationPar
 
 func GetResponseChanForChat(chatRequestBody *ChatParams) <-chan string {
 	payload := getGeminiPayloadForChat(chatRequestBody)
+	return callApi(payload)
+}
+
+func GetResponseChanForCorrectiveAI(correctiveAIRequestBody *TextCorrectionParams) <-chan string {
+	payload := getGeminiPayloadForTextCorrection(correctiveAIRequestBody)
 	return callApi(payload)
 }
