@@ -2,4 +2,4 @@
 
 This is a hosted Middleware to connect Gemini with optimizely CMP.
 
-For more details visit [developer docs](https://confluence.sso.episerver.net/pages/viewpage.action?pageId=2928098323_).
+For more details visit [developer docs](https://confluence.sso.episerver.net/pages/viewpage.action?pageId=2928098323).
