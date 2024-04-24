@@ -4,7 +4,7 @@
   "webhooks": {},
   "parameters": {
     "GEMINI_AI_API_KEY": {
-      "label": "Stablitiy AI  API key",
+      "label": "Gemini AI API key",
       "type": "secret",
       "required": true
     }
