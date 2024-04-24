@@ -1,4 +1,4 @@
-module server
+module github.com/kamrul1157024/byoai-gemini
 
 go 1.22.0
 

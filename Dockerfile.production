@@ -6,10 +6,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-RUN go build
+RUN make build
 
 FROM scratch
-COPY --from=builder /app/server /server
+COPY --from=builder /app/main /main
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENV GIN_MODE=release
 ENTRYPOINT ["/server"]
