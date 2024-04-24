@@ -33,8 +33,22 @@ type TextGenerationParams struct {
 	Description *string `json:"description,omitEmpty"`
 }
 
+type ConversationItem struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type ChatParams struct {
+	Conversation []ConversationItem `json:"conversation"`
+}
+
 type Part struct {
 	Text string `json:"text"`
+}
+
+type ChatContent struct {
+	Role  string `json:"role"`
+	Parts []Part `json:"parts"`
 }
 
 type Content struct {
@@ -43,6 +57,10 @@ type Content struct {
 
 type GeminiRequestBody struct {
 	Contents []Content `json:"contents"`
+}
+
+type GeminiChatRequestBody struct {
+	Contents []ChatContent `json:"contents"`
 }
 
 type Candidate struct {
@@ -135,7 +153,7 @@ func getFormattedPromptForGenerativeAI(textGenerationRequestBody *TextGeneration
 	return finalPrompt
 }
 
-func getGeminiPayload(textGenerationRequestBody *TextGenerationParams) *GeminiRequestBody {
+func getGeminiPayloadForTextGeneration(textGenerationRequestBody *TextGenerationParams) *GeminiRequestBody {
 	prompt := getFormattedPromptForGenerativeAI(textGenerationRequestBody)
 	return &GeminiRequestBody{
 		Contents: []Content{
@@ -150,9 +168,35 @@ func getGeminiPayload(textGenerationRequestBody *TextGenerationParams) *GeminiRe
 	}
 }
 
-func callApi(payload GeminiRequestBody) <-chan string {
+func getGeminiRule(chatParamsRule string) string {
+	if chatParamsRule == "assistant" {
+		return "model"
+	}
+	return "user"
+}
+
+func getGeminiPayloadForChat(chatParams *ChatParams) *GeminiChatRequestBody {
+	contents := []ChatContent{}
+	for _, conversationItem := range chatParams.Conversation {
+		if conversationItem.Role == "system" {
+			continue
+		}
+		contents = append(contents, ChatContent{
+			Role: getGeminiRule(conversationItem.Role),
+			Parts: []Part{
+				{
+					Text: conversationItem.Content,
+				},
+			},
+		})
+	}
+	return &GeminiChatRequestBody{
+		Contents: contents,
+	}
+}
+
+func callApi[V any](payload *V) <-chan string {
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?alt=sse&key=%s", config.AppConfig.GEMINI_API_KEY)
-	fmt.Println(url)
 	reqJson, err := json.Marshal(payload)
 	apperror.CheckAndLog(err, nil)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(reqJson)))
@@ -164,6 +208,11 @@ func callApi(payload GeminiRequestBody) <-chan string {
 }
 
 func GetResponseChanForGenerativeAI(textGenerationRequestBody *TextGenerationParams) <-chan string {
-	payload := getGeminiPayload(textGenerationRequestBody)
-	return callApi(*payload)
+	payload := getGeminiPayloadForTextGeneration(textGenerationRequestBody)
+	return callApi(payload)
+}
+
+func GetResponseChanForChat(chatRequestBody *ChatParams) <-chan string {
+	payload := getGeminiPayloadForChat(chatRequestBody)
+	return callApi(payload)
 }

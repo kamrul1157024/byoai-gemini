@@ -36,10 +36,19 @@ func generateTextUsingGemini(c *gin.Context) {
 	StreamResponse(c, ch)
 }
 
+func generateContextFulChatUsingGemini(c *gin.Context) {
+	chatRequestBody := services.ChatParams{}
+	err := c.BindJSON(&chatRequestBody)
+	apperror.CheckAndLog(err, nil)
+  ch := services.GetResponseChanForChat(&chatRequestBody)
+  StreamResponse(c, ch)
+}
+
 func getStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
 func AddRoutesForGeminiAI(engine *gin.Engine) {
 	engine.POST("/generative/text", StreamingHeader, generateTextUsingGemini)
+	engine.POST("/chat", StreamingHeader, generateContextFulChatUsingGemini)
 }
