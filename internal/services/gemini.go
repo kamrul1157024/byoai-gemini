@@ -208,6 +208,14 @@ func getGeminiRule(chatParamsRule string) string {
 
 func getGeminiPayloadForChat(chatParams *ChatParams) *GeminiChatRequestBody {
 	contents := []ChatContent{}
+	contents = append(contents, ChatContent{
+		Role: "user",
+		Parts: []Part{
+			{
+				Text: "You are a helpful writing assistant",
+			},
+		},
+	})
 	for _, conversationItem := range chatParams.Conversation {
 		if conversationItem.Role == "system" {
 			continue
