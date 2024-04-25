@@ -16,6 +16,5 @@ func main() {
 	healthRouter := engine.Group("/")
 	apis.AddRoutesForHealthCheck(healthRouter)
 
-	engine.SetTrustedProxies(nil)
 	engine.Run("0.0.0.0:8000")
 }
