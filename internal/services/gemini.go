@@ -11,6 +11,7 @@ import (
 
 	"github.com/kamrul1157024/byoai-gemini/internal/apperror"
 	"github.com/kamrul1157024/byoai-gemini/internal/config"
+	"github.com/kamrul1157024/byoai-gemini/internal/loggers"
 )
 
 var INITIAL_PROMPTS_FOR_TEXT_GENERATION = map[string]string{
@@ -109,9 +110,8 @@ func transfromChunk(chunkChannel <-chan []byte) <-chan string {
 			jsonStr := line[6:]
 			geminiStreamResponse := GeminiStreamResponse{}
 			err := json.Unmarshal([]byte(jsonStr), &geminiStreamResponse)
-			apperror.CheckAndLog(err, nil)
+			apperror.CheckAndLog(err, "Error while transforming chunk")
 			bufferText := getTextFromGeminiResponse(geminiStreamResponse)
-			fmt.Println(bufferText)
 			textChannel <- bufferText
 		}
 	}()
@@ -127,7 +127,8 @@ func streamToChannel(reader *bufio.Reader) <-chan []byte {
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				apperror.CheckAndLog(err, nil)
+				apperror.CheckAndLog(err, "Error While processing Stream")
+				loggers.AppLogger.Error("Error From chunk", "chunkRes", string(lineBytes))
 				break
 			}
 
@@ -168,7 +169,7 @@ func getFormattedPromptForGenerativeAI(textGenerationRequestBody *TextGeneration
 }
 
 func getFormattedPromptForCorrectiveAI(correctiveAIRequestBody *TextCorrectionParams) string {
-	fmt.Println(correctiveAIRequestBody)
+	loggers.AppLogger.Info("Correcting Request With params", "payload", *correctiveAIRequestBody)
 	prompt := fmt.Sprintf(`
   You are helpful writting assistant,
   if you can not find proper response just send back the content.
@@ -180,7 +181,7 @@ func getFormattedPromptForCorrectiveAI(correctiveAIRequestBody *TextCorrectionPa
 		PROMPTS_FOR_CONTENT_EDIT[correctiveAIRequestBody.FineTuneOption],
 		correctiveAIRequestBody.Input,
 	)
-	fmt.Println(prompt)
+	loggers.AppLogger.Info("Generated Prompt for corretive AI loggger", "prompt", prompt)
 	return prompt
 }
 
@@ -255,12 +256,11 @@ func callApi[V any](payload *V) <-chan string {
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?alt=sse&key=%s",
 		config.AppConfig.GEMINI_API_KEY,
 	)
-  println(url)
 	reqJson, err := json.Marshal(payload)
-	fmt.Println(string(reqJson))
-	apperror.CheckAndLog(err, nil)
+	loggers.AppLogger.Info("Sending Request Gemini API", "payload", *payload)
+	apperror.CheckAndLog(err, "Erro while parsing Gemini API Payload")
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(reqJson)))
-	apperror.CheckAndLog(err, nil)
+	apperror.CheckAndLog(err, "Error while calling Gemini API")
 	reader := bufio.NewReader(resp.Body)
 	bytesChan := streamToChannel(reader)
 	textChan := transfromChunk(bytesChan)

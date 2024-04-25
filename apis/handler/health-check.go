@@ -10,6 +10,6 @@ func getAppStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-func AddRoutesForHealthCheck(engine *gin.Engine) {
-	engine.GET("/_status", getAppStatus)
+func AddRoutesForHealthCheck(r *gin.RouterGroup) {
+	r.GET("/_status", getAppStatus)
 }
